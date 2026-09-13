@@ -5,6 +5,7 @@ import {
   Search, ChevronDown, Menu, X
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -22,13 +23,13 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const role = localStorage.getItem('userRole') || 'ADMIN';
-  const userName = role === 'ADMIN' ? 'Dr. Wanjiku Mwangi' :
-                   role === 'TEACHER' ? 'Mr. James Otieno' :
-                   role === 'PARENT' ? 'Mrs. Grace Njeri' : 'Alex Kamau';
+  const { role, user, signOut } = useAuth();
+  
+  const userName = user?.email || 'User';
+  const displayRole = role || 'USER';
 
-  const handleLogout = () => {
-    localStorage.removeItem('userRole');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
 
@@ -130,7 +131,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{userName}</p>
-              <p className="text-[11px] text-slate-400">{role.charAt(0) + role.slice(1).toLowerCase()}</p>
+              <p className="text-[11px] text-slate-400">{displayRole.charAt(0) + displayRole.slice(1).toLowerCase()}</p>
             </div>
             <button
               onClick={handleLogout}
