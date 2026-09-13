@@ -3,6 +3,7 @@ import { PrismaClient } from './generated/client';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 dotenv.config();
+import { redisPub } from './lib/redis';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -96,11 +97,28 @@ app.post('/api/v1/assessment/grades/compute', async (req, res) => {
       }
     });
 
+    await redisPub.publish('assessment.events', JSON.stringify({
+      type: 'assessment.grades.computed',
+      payload: computed,
+      timestamp: new Date().toISOString()
+    }));
+
     res.json(computed);
   } catch (error) {
     console.error(error);
     res.status(400).json({ error: 'Compute failed' });
   }
+});
+
+app.get('/api/v1/assessment/grades', async (req, res) => {
+  const { studentId, subjectId, term } = req.query;
+  const where: any = {};
+  if (studentId) where.studentId = String(studentId);
+  if (subjectId) where.subjectId = String(subjectId);
+  if (term) where.term = String(term);
+  
+  const grades = await prisma.computedGrade.findMany({ where });
+  res.json(grades);
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'assessment-service' }));

@@ -3,6 +3,7 @@ import { PrismaClient } from './generated/client';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 dotenv.config();
+import { redisPub } from './lib/redis';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -56,6 +57,15 @@ app.post('/api/v1/fees/invoices/generate', async (req, res) => {
       }))
     );
     
+    // Publish invoice.generated events
+    for (const inv of invoices) {
+      await redisPub.publish('fees.events', JSON.stringify({
+        type: 'fees.invoice.generated',
+        payload: inv,
+        timestamp: new Date().toISOString()
+      }));
+    }
+
     res.json({ message: 'Invoices generated', count: invoices.length });
   } catch (error) {
     res.status(400).json({ error: 'Invalid input' });
@@ -123,7 +133,13 @@ app.post('/api/v1/fees/payments/confirm', async (req, res) => {
           }
         })
       ]);
-      // TODO: Publish invoice.paid event
+      
+      // Publish invoice.paid event
+      await redisPub.publish('fees.events', JSON.stringify({
+        type: 'fees.payment.confirmed',
+        payload: { paymentId: payment.id, invoiceId: payment.invoiceId, amount: payment.amount },
+        timestamp: new Date().toISOString()
+      }));
     } else {
       await prisma.payment.update({
         where: { id: payment.id },
@@ -135,6 +151,17 @@ app.post('/api/v1/fees/payments/confirm', async (req, res) => {
   } catch (error) {
     res.status(400).json({ error: 'Invalid input' });
   }
+});
+
+app.get('/api/v1/fees/invoices', async (req, res) => {
+  const { studentId, term, status } = req.query;
+  const where: any = {};
+  if (studentId) where.studentId = String(studentId);
+  if (term) where.term = String(term);
+  if (status) where.status = String(status);
+
+  const invoices = await prisma.invoice.findMany({ where, include: { feeStructure: true } });
+  res.json(invoices);
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'fees-service' }));

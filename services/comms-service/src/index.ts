@@ -3,6 +3,7 @@ import { PrismaClient } from './generated/client';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 dotenv.config();
+import { redisSub } from './lib/redis';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -55,8 +56,6 @@ app.get('/api/v1/comms/templates', async (req, res) => {
   res.json(templates);
 });
 
-// Notifications should ideally be consumed from Redis.
-// Providing a manual endpoint here for testing.
 const notifySchema = z.object({
   eventId: z.string(),
   eventType: z.string(),
@@ -73,7 +72,6 @@ app.post('/api/v1/comms/notifications', async (req, res) => {
     
     if (!template) return res.status(404).json({ error: 'Template not found' });
 
-    // Idempotency check via unique constraint
     try {
       const log = await prisma.notificationLog.create({
         data: {
@@ -86,9 +84,7 @@ app.post('/api/v1/comms/notifications', async (req, res) => {
       });
       res.json(log);
     } catch (e: any) {
-      if (e.code === 'P2002') {
-        return res.json({ message: 'Event already processed' });
-      }
+      if (e.code === 'P2002') return res.json({ message: 'Event already processed' });
       throw e;
     }
   } catch (error) {
@@ -97,6 +93,51 @@ app.post('/api/v1/comms/notifications', async (req, res) => {
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'comms-service' }));
+
+// Redis Subscription Logic
+redisSub.subscribe('academics.events', 'assessment.events', 'fees.events', (err, count) => {
+  if (err) {
+    console.error('Failed to subscribe:', err.message);
+  } else {
+    console.log(`Subscribed to ${count} channels.`);
+  }
+});
+
+redisSub.on('message', async (channel, message) => {
+  try {
+    const event = JSON.parse(message);
+    const eventId = `${channel}-${new Date(event.timestamp).getTime()}`;
+    
+    let template = await prisma.notificationTemplate.findUnique({ where: { eventType: event.type } });
+    if (!template) {
+      // Auto-create a default template for the event if it doesn't exist
+      template = await prisma.notificationTemplate.create({
+        data: {
+          eventType: event.type,
+          subjectTemplate: `Notification: ${event.type}`,
+          bodyTemplate: `Event payload: ${JSON.stringify(event.payload)}`,
+          channel: 'EMAIL'
+        }
+      });
+    }
+
+    // Try to create notification log (idempotent)
+    await prisma.notificationLog.create({
+      data: {
+        eventId,
+        eventType: event.type,
+        recipientRef: 'auto-recipient', // In reality, we'd lookup the parent/student ID here
+        channel: template.channel,
+        status: 'SENT'
+      }
+    });
+    console.log(`Processed event ${event.type}`);
+  } catch (err: any) {
+    if (err.code !== 'P2002') {
+      console.error('Error processing event:', err);
+    }
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Comms service listening on port ${PORT}`);
