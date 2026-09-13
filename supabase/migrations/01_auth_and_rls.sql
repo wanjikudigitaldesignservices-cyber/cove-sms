@@ -34,7 +34,7 @@ TO authenticated
 USING (user_id = auth.uid());
 
 -- Function to get the current user's role securely in RLS policies
-CREATE OR REPLACE FUNCTION auth.user_role()
+CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS user_role AS $$
   SELECT role FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
