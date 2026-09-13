@@ -1,4 +1,4 @@
-import { ClipboardList, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 const examResults = [
   { student: 'Amara Odhiambo', year: 'Y12', math: 'A*', physics: 'A', chemistry: 'A', biology: '—', english: 'A', avg: 'A*' },

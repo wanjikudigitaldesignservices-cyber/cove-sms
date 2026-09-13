@@ -1,4 +1,4 @@
-import { Building, Shield, Bell, CreditCard, Users, Globe, Lock, Save } from 'lucide-react';
+import { Building, Shield, Bell, CreditCard, Users, Globe, Save } from 'lucide-react';
 
 export default function Settings() {
   return (

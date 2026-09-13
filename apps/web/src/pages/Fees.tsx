@@ -1,4 +1,4 @@
-import { DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Download, Send } from 'lucide-react';
+import { DollarSign, TrendingUp, AlertTriangle, Download, Send } from 'lucide-react';
 
 const feeRecords = [
   { student: 'Amara Odhiambo', year: 'Year 12', total: 185000, paid: 185000, balance: 0, status: 'Paid', lastPayment: '2026-08-15' },
