@@ -1,0 +1,17 @@
+{
+  "name": "cove-sms",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "gateway",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker compose up",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  }
+}

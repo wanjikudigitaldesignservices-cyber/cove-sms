@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - SIS_SERVICE_URL=http://sis-service:3002
+      - ACADEMICS_SERVICE_URL=http://academics-service:3003
+      - ASSESSMENT_SERVICE_URL=http://assessment-service:3004
+      - FEES_SERVICE_URL=http://fees-service:3005
+      - COMMS_SERVICE_URL=http://comms-service:3006
+    depends_on:
+      - auth-service
+      - sis-service
+      - academics-service
+      - assessment-service
+      - fees-service
+      - comms-service
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/auth_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  sis-service:
+    build:
+      context: ./services/sis-service
+    environment:
+      - PORT=3002
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/sis_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  academics-service:
+    build:
+      context: ./services/academics-service
+    environment:
+      - PORT=3003
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/academics_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  assessment-service:
+    build:
+      context: ./services/assessment-service
+    environment:
+      - PORT=3004
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/assessment_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  fees-service:
+    build:
+      context: ./services/fees-service
+    environment:
+      - PORT=3005
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/fees_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  comms-service:
+    build:
+      context: ./services/comms-service
+    environment:
+      - PORT=3006
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/comms_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Add an init script to create all 6 schemas/databases on first boot
+      - ./infra/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

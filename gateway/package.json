@@ -1,0 +1,24 @@
+{
+  "name": "gateway",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "main": "src/index.ts",
+  "version": "1.0.0",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^4.2.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/http-proxy-middleware": "^0.19.3",
+    "@types/node": "^24.13.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "@types/jsonwebtoken": "^9.0.2"
+  }
+}

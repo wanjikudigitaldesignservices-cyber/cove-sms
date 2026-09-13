@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model GradeScale {
+  id              String            @id @default(uuid())
+  subjectId       String            // Reference to Academics
+  scaleType       ScaleType
+  boundaries      GradeBoundary[]
+}
+
+model GradeBoundary {
+  id              String            @id @default(uuid())
+  gradeScaleId    String
+  gradeScale      GradeScale        @relation(fields: [gradeScaleId], references: [id])
+  minPercentage   Float
+  letterGrade     String
+}
+
+model AssessmentComponent {
+  id               String            @id @default(uuid())
+  subjectId        String            // Reference to Academics
+  name             String
+  weightingPercent Float
+  term             String
+  scores           AssessmentScore[]
+}
+
+model AssessmentScore {
+  id                    String              @id @default(uuid())
+  studentId             String              // Reference to SIS
+  assessmentComponentId String
+  assessmentComponent   AssessmentComponent @relation(fields: [assessmentComponentId], references: [id])
+  rawScore              Float
+  maxScore              Float
+  term                  String
+
+  @@unique([studentId, assessmentComponentId, term])
+}
+
+model ComputedGrade {
+  id                 String   @id @default(uuid())
+  studentId          String   // Reference to SIS
+  subjectId          String   // Reference to Academics
+  term               String
+  weightedPercentage Float
+  letterGrade        String
+
+  @@unique([studentId, subjectId, term])
+}
+
+model PredictedGrade {
+  id              String   @id @default(uuid())
+  studentId       String   // Reference to SIS
+  subjectId       String   // Reference to Academics
+  academicYear    String
+  predictedGrade  String
+  predictedBy     String   // Auth User ID
+
+  @@unique([studentId, subjectId, academicYear])
+}
+
+model ReportCard {
+  id            String            @id @default(uuid())
+  studentId     String            // Reference to SIS
+  term          String
+  status        ReportCardStatus
+  lines         ReportCardLine[]
+}
+
+model ReportCardLine {
+  id            String      @id @default(uuid())
+  reportCardId  String
+  reportCard    ReportCard  @relation(fields: [reportCardId], references: [id])
+  subjectId     String
+  grade         String
+  comments      String?
+}
+
+enum ScaleType {
+  ALPHABETIC
+  NUMERIC
+}
+
+enum ReportCardStatus {
+  DRAFT
+  FINALIZED
+}

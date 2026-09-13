@@ -1,0 +1,6 @@
+CREATE DATABASE auth_db;
+CREATE DATABASE sis_db;
+CREATE DATABASE academics_db;
+CREATE DATABASE assessment_db;
+CREATE DATABASE fees_db;
+CREATE DATABASE comms_db;

@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id               String            @id @default(uuid())
+  authUserId       String?
+  admissionNumber  String            @unique
+  firstName        String
+  lastName         String
+  dob              DateTime
+  gender           String
+  yearGroup        String
+  enrollmentStatus String            @default("ACTIVE")
+  guardians        StudentGuardian[]
+  enrollments      Enrollment[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Guardian {
+  id           String            @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String?
+  phone        String?
+  relationship String
+  authUserId   String?
+  students     StudentGuardian[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model StudentGuardian {
+  studentId        String
+  guardianId       String
+  isPrimaryContact Boolean  @default(false)
+  student          Student  @relation(fields: [studentId], references: [id])
+  guardian         Guardian @relation(fields: [guardianId], references: [id])
+
+  @@id([studentId, guardianId])
+}
+
+model Class {
+  id           String       @id @default(uuid())
+  yearGroup    String
+  section      String
+  academicYear String
+  enrollments  Enrollment[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([yearGroup, section, academicYear])
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  studentId String
+  classId   String
+  term      String
+  status    String   @default("ENROLLED")
+  student   Student  @relation(fields: [studentId], references: [id])
+  class     Class    @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, classId, term])
+}

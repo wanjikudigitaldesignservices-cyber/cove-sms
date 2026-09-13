@@ -1,0 +1,11 @@
+{
+  "name": "@cove-sms/shared-types",
+  "main": "index.ts",
+  "version": "1.0.0",
+  "dependencies": {
+    "zod": "^3.22.2"
+  },
+  "scripts": {
+    "build": "echo 'No build for shared-types'"
+  }
+}

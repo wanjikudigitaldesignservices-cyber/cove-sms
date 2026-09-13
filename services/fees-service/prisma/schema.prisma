@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FeeStructure {
+  id             String    @id @default(uuid())
+  yearGroup      String
+  term           String
+  academicYear   String
+  amount         Float
+  currency       String    @default("KES")
+  invoices       Invoice[]
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  studentId      String       // Reference to SIS
+  feeStructureId String
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
+  term           String
+  amountDue      Float
+  amountPaid     Float        @default(0)
+  status         InvoiceStatus
+  payments       Payment[]
+
+  @@unique([studentId, feeStructureId, term])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  invoiceId         String
+  invoice           Invoice       @relation(fields: [invoiceId], references: [id])
+  provider          String
+  providerReference String        @unique
+  amount            Float
+  status            PaymentStatus
+  createdAt         DateTime      @default(now())
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}

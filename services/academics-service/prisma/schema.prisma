@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Subject {
+  id            String         @id @default(uuid())
+  syllabusCode  String
+  name          String
+  level         Level
+  classSubjects ClassSubject[]
+}
+
+model ClassSubject {
+  id                 String         @id @default(uuid())
+  classId            String         // Reference to SIS
+  subjectId          String
+  subject            Subject        @relation(fields: [subjectId], references: [id])
+  teacherAuthUserId  String         // Reference to Auth
+  timetableSlots     TimetableSlot[]
+}
+
+model TimetableSlot {
+  id               String            @id @default(uuid())
+  classSubjectId   String
+  classSubject     ClassSubject      @relation(fields: [classSubjectId], references: [id])
+  dayOfWeek        Int               // 1 = Monday, 5 = Friday
+  startTime        String            // e.g., "09:00"
+  endTime          String            // e.g., "10:00"
+  room             String
+  attendance       AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id               String         @id @default(uuid())
+  studentId        String         // Reference to SIS
+  timetableSlotId  String
+  timetableSlot    TimetableSlot  @relation(fields: [timetableSlotId], references: [id])
+  date             DateTime
+  status           AttendanceStatus
+  recordedBy       String
+  recordedAt       DateTime       @default(now())
+
+  @@unique([studentId, timetableSlotId, date])
+}
+
+enum Level {
+  IGCSE
+  A_LEVEL
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
