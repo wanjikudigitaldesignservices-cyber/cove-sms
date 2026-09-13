@@ -3,6 +3,7 @@ import { PrismaClient } from './generated/client';
 import { z } from 'zod';
 import dotenv from 'dotenv';
 dotenv.config();
+import { redisPub } from './lib/redis';
 
 const prisma = new PrismaClient();
 const app = express();
@@ -63,6 +64,13 @@ app.post('/api/v1/academics/class-subjects', async (req, res) => {
   }
 });
 
+app.get('/api/v1/academics/class-subjects', async (req, res) => {
+  const classSubjects = await prisma.classSubject.findMany({
+    include: { subject: true }
+  });
+  res.json(classSubjects);
+});
+
 const attendanceSchema = z.object({
   timetableSlotId: z.string(),
   date: z.string(),
@@ -101,12 +109,32 @@ app.post('/api/v1/academics/attendance', async (req, res) => {
       }))
     );
 
-    // TODO: Publish event to Redis (attendance.recorded)
+    // Publish event to Redis (attendance.recorded)
+    await redisPub.publish('academics.events', JSON.stringify({
+      type: 'attendance.recorded',
+      payload: {
+        timetableSlotId,
+        date,
+        count: createdRecords.length,
+        recordedBy: teacherId
+      },
+      timestamp: new Date().toISOString()
+    }));
     
     res.json({ message: 'Attendance recorded', count: createdRecords.length });
   } catch (error) {
     res.status(400).json({ error: 'Invalid input or student already recorded' });
   }
+});
+
+app.get('/api/v1/academics/attendance', async (req, res) => {
+  const { timetableSlotId, date } = req.query;
+  const where: any = {};
+  if (timetableSlotId) where.timetableSlotId = String(timetableSlotId);
+  if (date) where.date = new Date(String(date));
+  
+  const records = await prisma.attendanceRecord.findMany({ where });
+  res.json(records);
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'academics-service' }));

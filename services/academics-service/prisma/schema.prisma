@@ -51,6 +51,7 @@ model AttendanceRecord {
 
 enum Level {
   IGCSE
+  AS_LEVEL
   A_LEVEL
 }
 
